@@ -1,0 +1,76 @@
+import cv2
+import numpy as np
+import RPi.GPIO as GPIO
+
+# Configuración de pines
+IN3 = 22  # Pin de control 1 del L298N
+IN4 = 27  # Pin de control 2 del L298N
+ENB = 18  # Pin de habilitación (PWM) del L298N
+
+# Configuración de GPIO
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(IN3, GPIO.OUT)
+GPIO.setup(IN4, GPIO.OUT)
+GPIO.setup(ENB, GPIO.OUT)
+
+# Configuración de PWM
+pwm = GPIO.PWM(ENB, 50)  # 50Hz de frecuencia
+pwm.start(50)  # Iniciar con ciclo de trabajo del 50%
+
+def control_motor(position, frame_width):
+    mid_x = frame_width / 2
+
+    # Si el rectángulo está a la izquierda del centro de la pantalla
+    if position < mid_x:
+        GPIO.output(IN3, GPIO.HIGH)
+        GPIO.output(IN4, GPIO.LOW)
+    else:  # Si está a la derecha
+        GPIO.output(IN3, GPIO.LOW)
+        GPIO.output(IN4, GPIO.HIGH)
+
+def process_frame(frame):
+    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    lower_red1 = np.array([0, 40, 40])
+    upper_red1 = np.array([20, 255, 255])
+    mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
+
+    lower_red2 = np.array([150, 40, 40])
+    upper_red2 = np.array([180, 255, 255])
+    mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
+
+    mask = mask1 + mask2
+
+    contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    for contour in contours:
+        if cv2.contourArea(contour) > 1000:
+            x, y, w, h = cv2.boundingRect(contour)
+            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+
+            M = cv2.moments(contour)
+            if M["m00"] != 0:
+                cX = int(M["m10"] / M["m00"])
+                control_motor(cX, frame.shape[1])
+
+    return frame
+
+cap = cv2.VideoCapture(0)
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        print("No se pudo obtener el frame")
+        break
+
+    processed_frame = process_frame(frame)
+    cv2.imshow('Detección de Rectángulo Rojo', processed_frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
+pwm.stop()
+GPIO.cleanup()
