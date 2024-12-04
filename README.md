@@ -1,9 +1,5 @@
 Este código utiliza OpenCV y GPIO en una Raspberry Pi para controlar un motor mediante el driver L298N, en función de la posición de un rectángulo rojo detectado en la imagen capturada por la cámara.
 
-Descripción del Código
-Componentes del Hardware
-L298N
-
 IN3 y IN4: Pines de control para determinar la dirección del motor.
 ENB: Pin de habilitación que utiliza PWM para controlar la velocidad del motor.
 Raspberry Pi GPIO
@@ -49,26 +45,6 @@ Tonos de rojo:
 Rojo claro: [0, 40, 40] a [20, 255, 255].
 Rojo oscuro: [150, 40, 40] a [180, 255, 255].
 Estas máscaras permiten detectar colores en el rango completo de tonos de rojo.
-**Cál
-cálculo del Centroide
 
-El momento cv2.moments(contour) se utiliza para calcular el centroide del contorno.
-Centroide 
-𝑐
-𝑋
-=
-𝑚
-10
-𝑚
-00
-cX= 
-m00
-m10
-​
- , donde:
-m10: Suma ponderada de las posiciones X de todos los píxeles del contorno.
-m00: Área del contorno.
-Control del Motor Basado en Posición
-Se compara el centroide X (cX) con el centro del fotograma (frame_width / 2):
-Si cX < mid_x: Rectángulo está a la izquierda; motor rota en una dirección.
-Si cX > mid_x: Rectángulo está a la derecha; motor rota en la dirección opuesta.
+
+
